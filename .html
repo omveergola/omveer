@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Omveer - Hacker Simulation</title>
+  <style>
+    /* Basic reset */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:#000;color:#7fffd4;font-family:monospace}
+    .center{display:flex;align-items:center;justify-content:center;height:100%}
+
+    /* Password overlay */
+    #lockOverlay{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column}
+    #lockBox{background:#071018;border:1px solid #0f6b4a;padding:28px;border-radius:8px;min-width:320px;box-shadow:0 8px 30px rgba(0,0,0,0.7)}
+    #lockBox h2{color:#7fffd4;margin-bottom:10px}
+    #pwd{width:100%;padding:10px;background:#001316;border:1px solid #083; color:#7fffd4}
+    #unlockBtn{margin-top:12px;padding:10px;border-radius:6px;border:1px solid #0f6b4a;background:transparent;color:#7fffd4;cursor:pointer}
+    #msg{margin-top:8px;color:#9fdfc4;font-size:13px}
+
+    /* Main screen */
+    #main{padding:18px;display:none;height:100%;overflow:hidden}
+    header{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+    .brand{font-weight:700;font-size:20px;color:#7fffd4}
+    .name{opacity:0.8}
+    .controls{margin-left:auto;display:flex;gap:8px}
+    button.c{background:transparent;border:1px solid #0f6b4a;padding:6px 10px;border-radius:6px;color:#7fffd4;cursor:pointer}
+
+    /* terminal */
+    #terminal{background:#000; border:1px solid #083; padding:12px; height:68vh; overflow:auto; border-radius:6px}
+    .line{font-family:monospace;white-space:pre-wrap}
+
+    /* fake progress */
+    .bar{height:12px;background:#022f20;border-radius:6px;overflow:hidden;margin-top:8px}
+    .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,rgba(127,255,212,0.08),rgba(127,255,212,0.2));transition:width 0.25s}
+
+    /* bottom hint */
+    footer{margin-top:12px;color:#6fd6b8;font-size:13px}
+
+    /* visual matrix background */
+    #matrix{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.06}
+    canvas{width:100%;height:100%}
+
+    @media (max-width:560px){#lockBox{min-width:260px}}
+  </style>
+</head>
+<body>
+  <!-- matrix background -->
+  <div id="matrix"><canvas id="c"></canvas></div>
+
+  <!-- password overlay -->
+  <div id="lockOverlay">
+    <div id="lockBox">
+      <h2>Secure Access</h2>
+      <div style="color:#9fdfc4;margin-bottom:6px">Website ko chalane ke liye password darj karein</div>
+      <input id="pwd" placeholder="Password dalein" autocomplete="off" />
+      <button id="unlockBtn">Unlock</button>
+      <div id="msg">(Hint: password aapke liye set kiya gaya hai)</div>
+    </div>
+    <div style="margin-top:16px;color:#204">Made for Omveer — fun simulation only</div>
+  </div>
+
+  <!-- main UI -->
+  <div id="main">
+    <header>
+      <div class="brand">Omveer</div>
+      <div class="name">Hacker-Sim</div>
+      <div class="controls">
+        <button class="c" id="startBtn">Start Hacking</button>
+        <button class="c" id="stopBtn">Stop</button>
+        <button class="c" id="resetBtn">Reset</button>
+      </div>
+    </header>
+
+    <div id="terminal" aria-live="polite"></div>
+
+    <div class="bar"><i id="progress"></i></div>
+    <footer>Type the secret keyword or click <strong>Start Hacking</strong> to begin. Secret keyword: <em>batqan</em></footer>
+  </div>
+
+  <script>
+    // Password logic (exact match 'omveer')
+    const overlay = document.getElementById('lockOverlay');
+    const pwdInput = document.getElementById('pwd');
+    const unlockBtn = document.getElementById('unlockBtn');
+    const msg = document.getElementById('msg');
+    const main = document.getElementById('main');
+
+    function unlock(){
+      const v = pwdInput.value.trim();
+      if(v.toLowerCase()==='omveer'){
+        overlay.style.display='none';
+        main.style.display='block';
+        addLine('Welcome, Omveer. Interface unlocked.');
+      } else {
+        msg.textContent='Password galat — dobara koshish karein.';
+        pwdInput.value='';
+        pwdInput.focus();
+      }
+    }
+    unlockBtn.addEventListener('click',unlock);
+    pwdInput.addEventListener('keydown',e=>{ if(e.key==='Enter') unlock(); });
+
+    // Terminal fake output
+    const terminal = document.getElementById('terminal');
+    function addLine(s){
+      const d = document.createElement('div'); d.className='line'; d.textContent = s; terminal.appendChild(d); terminal.scrollTop = terminal.scrollHeight; }
+
+    // Fake 'hacking' sequence
+    let hacking=false; let progress=0; let hackInterval=null;
+    const progressBar = document.getElementById('progress');
+
+    function startHack(){
+      if(hacking) return;
+      hacking=true; progress=0; addLine('--- INITIATING SIMULATION ---');
+      addLine('Establishing virtual link...');
+      hackInterval = setInterval(()=>{
+        // show fake logs
+        const fakeFiles = ['vault.db','secrets.txt','passwd.dump','network.log','alpha.key'];
+        addLine('> probing ' + fakeFiles[Math.floor(Math.random()*fakeFiles.length)]);
+        progress = Math.min(100, progress + Math.floor(Math.random()*10)+5);
+        progressBar.style.width = progress + '%';
+        progressBar.style.display = 'block';
+        progressBar.style.width = progress + '%';
+        document.getElementById('progress').style.width = progress + '%';
+        if(progress>=100){ addLine('-- SIMULATION COMPLETE --'); stopHack(); }
+      },800);
+    }
+
+    function stopHack(){
+      hacking=false; if(hackInterval) clearInterval(hackInterval); hackInterval=null; addLine('Simulation stopped.');
+      progress=0; document.getElementById('progress').style.width = '0%';
+    }
+
+    function resetSim(){ terminal.innerHTML=''; addLine('Terminal cleared.'); }
+
+    document.getElementById('startBtn').addEventListener('click',startHack);
+    document.getElementById('stopBtn').addEventListener('click',stopHack);
+    document.getElementById('resetBtn').addEventListener('click',resetSim);
+
+    // Secret keyword listener: if user types sequence 'batqan' anywhere, start hack
+    const secret = 'batqan'; let seq='';
+    window.addEventListener('keydown', e=>{
+      if(!main.style.display || main.style.display==='none') return; // ignore before unlock
+      if(e.key.length===1){ // normal character
+        seq += e.key.toLowerCase();
+        if(secret.startsWith(seq)===false) seq = e.key.toLowerCase();
+        if(seq === secret){ startHack(); seq=''; }
+      }
+
+      // quick shortcuts
+      if(e.key==='F5'){ e.preventDefault(); resetSim(); }
+      if(e.ctrlKey && e.key==='k'){ startHack(); }
+    });
+
+    // Matrix background (visual only) - small and lightweight
+    (function matrix(){
+      const canvas = document.getElementById('c');
+      const ctx = canvas.getContext('2d');
+      function resize(){ canvas.width = innerWidth; canvas.height = innerHeight; }
+      window.addEventListener('resize',resize); resize();
+      const cols = Math.floor(canvas.width/14);
+      const drops = Array(cols).fill(1);
+      function draw(){
+        ctx.fillStyle='rgba(0,0,0,0.06)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle='rgba(127,255,212,0.8)'; ctx.font='13px monospace';
+        for(let i=0;i<drops.length;i++){
+          const text = String.fromCharCode(0x30A0 + Math.random()*96);
+          ctx.fillText(text, i*14, drops[i]*14);
+          if(drops[i]*14 > canvas.height && Math.random()>0.975) drops[i]=0;
+          drops[i]++;
+        }
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+
+    // Ensure progress bar inner element receives width updates
+    // create minimal accessible width control
+    document.getElementById('progress').style.width='0%';
+
+    // Friendly initial message
+    addLine('Page loaded. Please enter password to begin.');
+  </script>
+</body>
+</html>
